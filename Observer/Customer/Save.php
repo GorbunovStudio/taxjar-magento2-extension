@@ -52,9 +52,9 @@ class Save extends Customer
         // Null values are used to delete old address data
         $data = [
             'customer_id' => $customer->getId(),
-            'exemption_type' => $customer->getCustomAttribute('tj_exemption_type')->getValue(),
+            'exemption_type' => $customer->getCustomAttribute('tj_exemption_type')?->getValue() ?? 'non_exempt',
             'name' => $customer->getFirstname() . ' ' . $customer->getLastname(),
-            'exempt_regions' => $this->getRegionsArray($customer->getCustomAttribute('tj_regions')->getValue()),
+            'exempt_regions' => $this->getRegionsArray($customer->getCustomAttribute('tj_regions')?->getValue()),
             'country' => null,
             'state' => null,
             'zip' => null,
@@ -77,11 +77,11 @@ class Save extends Customer
             }
         }
 
-        $response = $this->updateTaxjar($customer->getCustomAttribute('tj_last_sync')->getValue(), $data);
+        $response = $this->updateTaxjar($customer->getCustomAttribute('tj_last_sync')?->getValue(), $data);
 
         if (isset($response)) {
             $this->logger->log('Successful API response: ' . json_encode($response), 'success');
-            $customer->setData('tj_last_sync', $this->date->timestamp());
+            $customer->setCustomAttribute('tj_last_sync', $this->date->timestamp());
         }
     }
 }
