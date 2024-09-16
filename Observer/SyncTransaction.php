@@ -97,6 +97,10 @@ class SyncTransaction implements ObserverInterface
             $order = $event->getData('order') ?? $event->getData('order_id');
         }
 
+        if (!$order->getState()) {
+            return;
+        }
+
         if ($order->getTjSalestaxSyncDate() && !$this->helper->isTransactionsUpdatesSyncEnabled($order->getStoreId())) {
             return;
         }

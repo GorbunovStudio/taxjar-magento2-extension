@@ -115,14 +115,14 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     /**
      * @param int $scopeCode
      * @param string $scope
-     * @return bool
+     * @return string
      */
     public function getTransactionsSyncThreshold(
         $scopeCode = 0,
         $scope = \Magento\Store\Model\ScopeInterface::SCOPE_STORE
     ) {
         $scopeCode = $scopeCode ?: (int) $this->request->getParam($scope, 0);
-        return (bool)$this->scopeConfig->getValue(
+        return $this->scopeConfig->getValue(
             \Taxjar\SalesTax\Model\Configuration::TAXJAR_TRANSACTIONS_SYNC_THRESHOLD,
             $scope,
             $scopeCode
