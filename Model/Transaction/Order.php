@@ -25,7 +25,7 @@ use Magento\Sales\Model\AbstractModel;
 
 class Order extends \Taxjar\SalesTax\Model\Transaction
 {
-    protected const SYNCABLE_STATES = ['complete', 'closed'];
+    protected const SYNCABLE_STATES = ['complete', 'closed', 'processing', 'holded'];
 
     protected const SYNCABLE_CURRENCIES = ['USD'];
 
