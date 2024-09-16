@@ -84,6 +84,11 @@ class Backup extends Field
     protected $taxjarConfig;
 
     /**
+     * @var string
+     */
+    protected $apiKey;
+
+    /**
      * @param CacheInterface $cache
      * @param Context $context
      * @param RateFactory $rateFactory

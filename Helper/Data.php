@@ -96,6 +96,40 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     }
 
     /**
+     * @param int $scopeCode
+     * @param string $scope
+     * @return bool
+     */
+    public function isTransactionsUpdatesSyncEnabled(
+        $scopeCode = 0,
+        $scope = \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+    ) {
+        $scopeCode = $scopeCode ?: (int) $this->request->getParam($scope, 0);
+        return (bool)$this->scopeConfig->getValue(
+            \Taxjar\SalesTax\Model\Configuration::TAXJAR_TRANSACTIONS_UPDATES_SYNC,
+            $scope,
+            $scopeCode
+        );
+    }
+
+    /**
+     * @param int $scopeCode
+     * @param string $scope
+     * @return string
+     */
+    public function getTransactionsSyncThreshold(
+        $scopeCode = 0,
+        $scope = \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+    ) {
+        $scopeCode = $scopeCode ?: (int) $this->request->getParam($scope, 0);
+        return $this->scopeConfig->getValue(
+            \Taxjar\SalesTax\Model\Configuration::TAXJAR_TRANSACTIONS_SYNC_THRESHOLD,
+            $scope,
+            $scopeCode
+        );
+    }
+
+    /**
      * Return a custom user agent string
      *
      * @return string
