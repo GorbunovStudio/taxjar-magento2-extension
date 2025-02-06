@@ -18,6 +18,7 @@
 namespace Taxjar\SalesTax\Console\Command;
 
 use Magento\Framework\App\State;
+use Magento\Framework\Console\Cli;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -88,6 +89,10 @@ class SyncProductCategoriesCommand extends Command
             $output->writeln(
                 PHP_EOL . '<error>Failed to sync product tax categories: ' . $e->getMessage() . '</error>'
             );
+
+            return Cli::RETURN_FAILURE;
         }
+
+        return Cli::RETURN_SUCCESS;
     }
 }

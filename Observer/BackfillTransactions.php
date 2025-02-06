@@ -23,7 +23,7 @@ class BackfillTransactions implements \Magento\Framework\Event\ObserverInterface
 {
     public const BATCH_SIZE = 100;
 
-    public const SYNCABLE_STATUSES = ['complete', 'closed'];
+    public const SYNCABLE_STATUSES = ['complete', 'closed', 'processing', 'holded'];
 
     /**
      * @var \Magento\Framework\App\RequestInterface
