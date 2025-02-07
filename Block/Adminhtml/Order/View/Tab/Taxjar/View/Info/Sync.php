@@ -17,6 +17,8 @@
 
 namespace Taxjar\SalesTax\Block\Adminhtml\Order\View\Tab\Taxjar\View\Info;
 
+use Magento\Sales\Model\Order;
+
 class Sync extends \Magento\Sales\Block\Adminhtml\Order\AbstractOrder
 {
     /**
@@ -24,7 +26,9 @@ class Sync extends \Magento\Sales\Block\Adminhtml\Order\AbstractOrder
      */
     protected const SYNCABLE_STATES = [
         \Magento\Sales\Model\Order::STATE_COMPLETE,
-        \Magento\Sales\Model\Order::STATE_CLOSED
+        \Magento\Sales\Model\Order::STATE_CLOSED,
+        \Magento\Sales\Model\Order::STATE_PROCESSING,
+        \Magento\Sales\Model\Order::STATE_HOLDED,
     ];
 
     /**
@@ -79,6 +83,13 @@ class Sync extends \Magento\Sales\Block\Adminhtml\Order\AbstractOrder
     public function getOrderSyncedAtDate($syncedAt)
     {
         return $this->_localeDate->date(new \DateTime($syncedAt));
+    }
+
+    public function getFormattedSyncDate(Order $order): ?string
+    {
+        $syncedAt = $order->getTjSalestaxSyncDate();
+
+        return $syncedAt ? $this->getOrderSyncedAtDate($syncedAt)->format('Y-m-d H:i:s') : null;
     }
 
     /**
