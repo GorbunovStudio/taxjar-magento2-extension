@@ -247,6 +247,8 @@ class Smartcalcs
                             $errorResponse->error . ' - ' . $errorResponse->detail,
                     ];
                 }
+
+                $this->setCacheData('order_metadata', (object) $metadata, $quote->getId());
             } catch (RuntimeException $e) {
                 // Catch API timeouts and network issues
                 $this->logger->log(
@@ -263,8 +265,14 @@ class Smartcalcs
         } else {
             $storedResponse = $this->getCacheData('response', $quote->getId());
 
-            if (isset($storedResponse)) {
+            if (isset($storedResponse) && is_object($storedResponse)) {
                 $this->response = $storedResponse;
+            }
+
+            $storedMetadata = $this->getCacheData('order_metadata', $quote->getId());
+
+            if (isset($storedMetadata) && is_object($storedMetadata)) {
+                $metadata = (array) $storedMetadata;
             }
         }
 
