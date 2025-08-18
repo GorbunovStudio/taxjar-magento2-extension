@@ -34,5 +34,9 @@
     <extension_attributes for="Magento\Sales\Api\Data\OrderInterface">
         <attribute code="tj_tax_calculation_status" type="string" />
         <attribute code="tj_tax_calculation_message" type="string" />
+        <attribute code="tj_tax_prevent_tax_sync" type="boolean" />
+    </extension_attributes>
+    <extension_attributes for="Magento\Quote\Api\Data\CartInterface">
+        <attribute code="tj_tax_force_magento_tax_collect" type="boolean" />
     </extension_attributes>
 </config>
