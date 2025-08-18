@@ -1,2 +1,4 @@
 Test/Integration/credentials.php
 vendor
+changes.diff
+composer.lock
