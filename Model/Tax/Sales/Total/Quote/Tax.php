@@ -140,6 +140,12 @@ class Tax extends \Magento\Tax\Model\Sales\Total\Quote\Tax
             return parent::collect($quote, $shippingAssignment, $total);
         }
 
+        if ($quote->getExtensionAttributes() && 
+            $quote->getExtensionAttributes()->getTjTaxForceMagentoTaxCollect()) {
+            $this->logger->log('Quote #' . $quote->getId() . ' marked to prevent TaxJar tax calculation.');
+            return parent::collect($quote, $shippingAssignment, $total);
+        }
+
         $baseQuoteTaxDetails = $this->getQuoteTaxDetailsInterface($shippingAssignment, $total, true);
         $this->smartCalcs->getTaxForOrder($quote, $baseQuoteTaxDetails, $shippingAssignment);
 
