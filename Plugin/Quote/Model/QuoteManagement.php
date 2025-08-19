@@ -18,6 +18,8 @@
 namespace Taxjar\SalesTax\Plugin\Quote\Model;
 
 use Magento\Quote\Api\CartManagementInterface;
+use Magento\Quote\Api\Data\CartInterface;
+use Magento\Quote\Api\Data\CartExtensionInterface;
 use Magento\Sales\Api\Data\OrderExtensionInterface;
 use Magento\Sales\Api\Data\OrderInterface;
 use Taxjar\SalesTax\Api\Data\Sales\MetadataRepositoryInterface;
@@ -60,30 +62,46 @@ class QuoteManagement
      *
      * @param CartManagementInterface $subject
      * @param OrderInterface|null $order
+     * @param CartInterface $quote
      * @return OrderInterface|null
      * @throws \Magento\Framework\Exception\CouldNotSaveException
      */
     public function afterSubmit(
         CartManagementInterface $subject,
-        ?OrderInterface $order
+        ?OrderInterface $order,
+        CartInterface $quote
     ): ?OrderInterface {
-        if ($order instanceof OrderInterface) {
-            /** @var OrderExtensionInterface $extensionAttributes */
-            $extensionAttributes = $order->getExtensionAttributes();
-            if ($extensionAttributes) {
-                if ($extensionAttributes->getTjTaxCalculationStatus()) {
-                    $this->metadata->setOrderId($order->getEntityId());
-                    $this->metadata->setTaxCalculationStatus($extensionAttributes->getTjTaxCalculationStatus());
-                }
-                if ($extensionAttributes->getTjTaxCalculationMessage()) {
-                    $this->metadata->setOrderId($order->getEntityId());
-                    $this->metadata->setTaxCalculationMessage($extensionAttributes->getTjTaxCalculationMessage());
-                }
-                if ($this->metadata->getOrderId() !== null) {
-                    $this->metadataRepository->save($this->metadata);
-                }
-            }
+        if (!$order instanceof OrderInterface) {
+            return $order;
         }
+
+        /** @var OrderExtensionInterface|null $orderExtensionAttributes */
+        $orderExtensionAttributes = $order->getExtensionAttributes();
+
+        if ($orderExtensionAttributes) {
+            if ($orderExtensionAttributes->getTjTaxCalculationStatus()) {
+                $this->metadata->setOrderId($order->getEntityId());
+                $this->metadata->setTaxCalculationStatus($orderExtensionAttributes->getTjTaxCalculationStatus());
+            }
+            if ($orderExtensionAttributes->getTjTaxCalculationMessage()) {
+                $this->metadata->setOrderId($order->getEntityId());
+                $this->metadata->setTaxCalculationMessage($orderExtensionAttributes->getTjTaxCalculationMessage());
+            }
+            
+        }
+
+        /** @var CartExtensionInterface|null $quoteExtensionAttributes */
+        $quoteExtensionAttributes = $quote->getExtensionAttributes();
+
+        if ($quoteExtensionAttributes && $quoteExtensionAttributes->getTjTaxForceMagentoTaxCollect() !== null) {
+            $this->metadata->setOrderId($order->getEntityId());
+            $this->metadata->setPreventTaxSync($quoteExtensionAttributes->getTjPreventTaxSync());
+        }
+
+        if ($this->metadata->getOrderId() !== null) {
+            $this->metadataRepository->save($this->metadata);
+        }
+
         return $order;
     }
 }

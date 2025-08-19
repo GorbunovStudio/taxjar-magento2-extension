@@ -56,6 +56,7 @@
     <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="false" identity="false" comment="Order_id"/>
     <column xsi:type="text" name="tax_calculation_status" nullable="false" comment="Tax_calculation_status"/>
     <column xsi:type="text" name="tax_calculation_message" nullable="false" comment="Tax_calculation_message"/>
+    <column xsi:type="boolean" name="prevent_tax_sync" nullable="false" default="0" comment="Prevent Tax Sync"/>
     <constraint xsi:type="primary" referenceId="PRIMARY">
       <column name="entity_id"/>
     </constraint>
