@@ -18,8 +18,6 @@
 namespace Taxjar\SalesTax\Plugin\Quote\Model;
 
 use Magento\Quote\Api\CartManagementInterface;
-use Magento\Quote\Api\Data\CartInterface;
-use Magento\Quote\Api\Data\CartExtensionInterface;
 use Magento\Sales\Api\Data\OrderExtensionInterface;
 use Magento\Sales\Api\Data\OrderInterface;
 use Taxjar\SalesTax\Api\Data\Sales\MetadataRepositoryInterface;
@@ -62,14 +60,12 @@ class QuoteManagement
      *
      * @param CartManagementInterface $subject
      * @param OrderInterface|null $order
-     * @param CartInterface $quote
      * @return OrderInterface|null
      * @throws \Magento\Framework\Exception\CouldNotSaveException
      */
     public function afterSubmit(
         CartManagementInterface $subject,
-        ?OrderInterface $order,
-        CartInterface $quote
+        ?OrderInterface $order
     ): ?OrderInterface {
         if (!$order instanceof OrderInterface) {
             return $order;
@@ -87,15 +83,10 @@ class QuoteManagement
                 $this->metadata->setOrderId($order->getEntityId());
                 $this->metadata->setTaxCalculationMessage($orderExtensionAttributes->getTjTaxCalculationMessage());
             }
-            
-        }
-
-        /** @var CartExtensionInterface|null $quoteExtensionAttributes */
-        $quoteExtensionAttributes = $quote->getExtensionAttributes();
-
-        if ($quoteExtensionAttributes && $quoteExtensionAttributes->getTjTaxForceMagentoTaxCollect() !== null) {
-            $this->metadata->setOrderId($order->getEntityId());
-            $this->metadata->setPreventTaxSync($quoteExtensionAttributes->getTjPreventTaxSync());
+            if ($orderExtensionAttributes->getTjTaxPreventTaxSync() !== null) {
+                $this->metadata->setOrderId($order->getEntityId());
+                $this->metadata->setPreventTaxSync($orderExtensionAttributes->getTjTaxPreventTaxSync());
+            }
         }
 
         if ($this->metadata->getOrderId() !== null) {
