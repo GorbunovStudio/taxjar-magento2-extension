@@ -29,6 +29,7 @@ interface MetadataInterface
     const ORDER_ID = 'order_id';
     const TAX_CALCULATION_STATUS = 'tax_calculation_status';
     const TAX_CALCULATION_MESSAGE = 'tax_calculation_message';
+    const PREVENT_TAX_SYNC = 'prevent_tax_sync';
 
     /**
      * Get metadata entry's id
@@ -84,6 +85,22 @@ interface MetadataInterface
      * @return $this
      */
     public function setTaxCalculationMessage($taxCalculationMessage);
+
+    /**
+     * Get prevent tax sync
+     *
+     * @return boolean
+     */
+    public function getPreventTaxSync(): bool;
+
+    /**
+     * Set prevent tax sync
+     *
+     * @param boolean $value
+     *
+     * @return $this
+     */
+    public function setPreventTaxSync(bool $value): self;
 
     /**
      * Save metadata

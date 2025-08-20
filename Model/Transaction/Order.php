@@ -210,6 +210,12 @@ class Order extends \Taxjar\SalesTax\Model\Transaction
      */
     public function isSyncable(OrderInterface $order): bool
     {
+        if ($order->getExtensionAttributes() && 
+            $order->getExtensionAttributes()->getTjTaxPreventTaxSync()) {
+            $this->logger->log('Order #' . $order->getIncrementId() . ' marked to prevent TaxJar sync.');
+            return false;
+        }
+        
         return $this->stateIsSyncable($order)
             && $this->currencyIsSyncable($order);
     }

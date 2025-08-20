@@ -111,4 +111,17 @@ class Metadata extends AbstractModel implements MetadataInterface
 
         return $this;
     }
+
+    public function getPreventTaxSync(): bool
+    {
+        return (bool) $this->getData(self::PREVENT_TAX_SYNC);
+    }
+
+    public function setPreventTaxSync(bool $preventTaxSync): self
+    {
+        $this->setData(self::PREVENT_TAX_SYNC, $preventTaxSync);
+
+        return $this;
+    }
+
 }

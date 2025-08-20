@@ -78,6 +78,7 @@ class OrderMetadata extends AbstractHelper
         if ($orderMetadata) {
             $extensionAttributes->setTjTaxCalculationStatus($orderMetadata->getTaxCalculationStatus());
             $extensionAttributes->setTjTaxCalculationMessage($orderMetadata->getTaxCalculationMessage());
+            $extensionAttributes->setTjTaxPreventTaxSync($orderMetadata->getPreventTaxSync());
         }
         return $order->setExtensionAttributes($extensionAttributes);
     }

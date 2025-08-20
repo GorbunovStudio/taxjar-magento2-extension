@@ -67,23 +67,32 @@ class QuoteManagement
         CartManagementInterface $subject,
         ?OrderInterface $order
     ): ?OrderInterface {
-        if ($order instanceof OrderInterface) {
-            /** @var OrderExtensionInterface $extensionAttributes */
-            $extensionAttributes = $order->getExtensionAttributes();
-            if ($extensionAttributes) {
-                if ($extensionAttributes->getTjTaxCalculationStatus()) {
-                    $this->metadata->setOrderId($order->getEntityId());
-                    $this->metadata->setTaxCalculationStatus($extensionAttributes->getTjTaxCalculationStatus());
-                }
-                if ($extensionAttributes->getTjTaxCalculationMessage()) {
-                    $this->metadata->setOrderId($order->getEntityId());
-                    $this->metadata->setTaxCalculationMessage($extensionAttributes->getTjTaxCalculationMessage());
-                }
-                if ($this->metadata->getOrderId() !== null) {
-                    $this->metadataRepository->save($this->metadata);
-                }
+        if (!$order instanceof OrderInterface) {
+            return $order;
+        }
+
+        /** @var OrderExtensionInterface|null $orderExtensionAttributes */
+        $orderExtensionAttributes = $order->getExtensionAttributes();
+
+        if ($orderExtensionAttributes) {
+            if ($orderExtensionAttributes->getTjTaxCalculationStatus()) {
+                $this->metadata->setOrderId($order->getEntityId());
+                $this->metadata->setTaxCalculationStatus($orderExtensionAttributes->getTjTaxCalculationStatus());
+            }
+            if ($orderExtensionAttributes->getTjTaxCalculationMessage()) {
+                $this->metadata->setOrderId($order->getEntityId());
+                $this->metadata->setTaxCalculationMessage($orderExtensionAttributes->getTjTaxCalculationMessage());
+            }
+            if ($orderExtensionAttributes->getTjTaxPreventTaxSync() !== null) {
+                $this->metadata->setOrderId($order->getEntityId());
+                $this->metadata->setPreventTaxSync($orderExtensionAttributes->getTjTaxPreventTaxSync());
             }
         }
+
+        if ($this->metadata->getOrderId() !== null) {
+            $this->metadataRepository->save($this->metadata);
+        }
+
         return $order;
     }
 }
