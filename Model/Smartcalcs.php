@@ -659,13 +659,24 @@ class Smartcalcs
         try {
             $unserializedData = $this->serializer->unserialize($cacheData);
         } catch (\Throwable $e) {
-            $this->logger->log('Unable to unserialize cache data for key: ' . $cacheKey, 'error');
+            $this->logger->log(
+                'Unable to unserialize cache data for key: ' . $cacheKey . 
+                '. Exception: ' . $e->getMessage() . 
+                '. Data value: ' . $cacheData, 
+                'error'
+            );
 
             return null;
         }
 
         if (!is_array($unserializedData)) {
-            $this->logger->log('Unserialized data is not an array for key: ' . $cacheKey, 'error');
+            $this->logger->log(
+                'Unserialized data is not an array for key: ' . $cacheKey . 
+                '. Data type: ' . gettype($unserializedData) . 
+                '. Data value: ' . $cacheData . 
+                '. Unserialized value: ' . var_export($unserializedData, true), 
+                'error'
+            );
 
             return null;
         }
@@ -688,7 +699,13 @@ class Smartcalcs
         try {
             $serializedValue = $this->serializer->serialize($value);
         } catch (\Throwable $e) {
-            $this->logger->log('Unable to serialize value for key: ' . $cacheKey, 'error');
+            $this->logger->log(
+                'Unable to serialize value for key: ' . $cacheKey . 
+                '. Exception: ' . $e->getMessage() . 
+                '. Object type: ' . get_class($value) . 
+                '. Object data: ' . var_export($value, true), 
+                'error'
+            );
 
             return false;
         }
