@@ -90,7 +90,7 @@ class Smartcalcs
     protected $scopeConfig;
 
     /**
-     * @var object<body: string, code: int>|null
+     * @var object{body: string, code: int}|null
      */
     protected $response;
 
