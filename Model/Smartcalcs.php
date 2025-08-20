@@ -265,13 +265,13 @@ class Smartcalcs
         } else {
             $storedResponse = $this->getCacheData('response', $quote->getId());
 
-            if (isset($storedResponse) && is_object($storedResponse)) {
+            if (is_object($storedResponse)) {
                 $this->response = $storedResponse;
             }
 
             $storedMetadata = $this->getCacheData('order_metadata', $quote->getId());
 
-            if (isset($storedMetadata) && is_object($storedMetadata)) {
+            if (is_object($storedMetadata)) {
                 $metadata = (array) $storedMetadata;
             }
         }
@@ -590,7 +590,7 @@ class Smartcalcs
     }
 
     /**
-     * Verify if the order changed compared to session
+     * Verify if the order changed compared to stored
      *
      * @return bool
      */
@@ -640,64 +640,74 @@ class Smartcalcs
     }
 
     /**
-     * Get data from session with cache fallback
+     * Get data from cache
      * 
      * @param string $key
      * @param string $quoteId
-     * @return object
+     * @return object|null
      */
     private function getCacheData(string $key, string $quoteId)
     {
-        $value = $this->_getSessionData($key);
-
-        if (is_object($value)) {
-            return $value;
-        }
-
         $cacheKey = self::TAXJAR_TAG . $quoteId . '_' . $key;
 
         $cacheData = $this->cache->load($cacheKey);
-        
-        if ($cacheData !== false) {
-            $this->_setSessionData($key, (object) $this->serializer->unserialize($cacheData));
+
+        if (!$cacheData) {
+            return null;
         }
 
-        return $this->_getSessionData($key);
+        try {
+            $unserializedData = $this->serializer->unserialize($cacheData);
+        } catch (\Throwable $e) {
+            $this->logger->log('Unable to unserialize cache data for key: ' . $cacheKey, 'error');
+
+            return null;
+        }
+
+        if (!is_array($unserializedData)) {
+            $this->logger->log('Unserialized data is not an array for key: ' . $cacheKey, 'error');
+
+            return null;
+        }
+
+        return (object) $unserializedData;
     }
 
     /**
-     * Set data in both cache and session
+     * Set data to cache
      * 
      * @param string $key
      * @param object $value
      * @param string $quoteId
-     * @return object
+     * @return bool
      */
     private function setCacheData(string $key, object $value, string $quoteId)
     {
         $cacheKey = self::TAXJAR_TAG . $quoteId . '_' . $key;
 
-        $serializedValue = $this->serializer->serialize($value);
+        try {
+            $serializedValue = $this->serializer->serialize($value);
+        } catch (\Throwable $e) {
+            $this->logger->log('Unable to serialize value for key: ' . $cacheKey, 'error');
 
-        $this->cache->save($serializedValue, $cacheKey, [self::TAXJAR_TAG], self::CACHE_LIFETIME);
+            return false;
+        }
 
-        return $this->_setSessionData($key, $value);
+        return $this->cache->save($serializedValue, $cacheKey, [self::TAXJAR_TAG], self::CACHE_LIFETIME);
     }
 
     /**
-     * Unset data from both cache and session
+     * Unset data from cache
      * 
      * @param string $key
      * @param string $quoteId
-     * @return object
+     * @return bool
      */
     private function unsetCacheData(string $key, string $quoteId)
     {
-        $cacheKey = self::TAXJAR_TAG . $quoteId . '-' . $key;
+        $cacheKey = self::TAXJAR_TAG . $quoteId . '_' . $key;
 
-        $this->cache->remove($cacheKey);
-
-        return $this->_unsetSessionData($key);
+        return $this->cache->remove($cacheKey);
     }
 
     private function _getStoreValue($value, $storeId)
