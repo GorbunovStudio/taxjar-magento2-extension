@@ -36,6 +36,9 @@ use Taxjar\SalesTax\Model\Configuration as TaxjarConfig;
  */
 class Smartcalcs
 {
+    private const TAXJAR_TAG = 'taxjar_salestax_';
+    private const CACHE_LIFETIME = 86400; // 1 day
+
     /**
      * @var \Magento\Checkout\Model\Session
      */
@@ -87,7 +90,7 @@ class Smartcalcs
     protected $scopeConfig;
 
     /**
-     * @var Response
+     * @var object{body: string, code: int}|null
      */
     protected $response;
 
@@ -110,6 +113,16 @@ class Smartcalcs
      * @var int
      */
     private $storeId;
+    
+    /**
+     * @var \Magento\Framework\App\CacheInterface
+     */
+    private $cache;
+
+    /**
+     * @var \Magento\Framework\Serialize\SerializerInterface
+     */
+    private $serializer;
 
     /**
      * Smartcalcs constructor.
@@ -127,6 +140,8 @@ class Smartcalcs
      * @param Logger $logger
      * @param TaxjarConfig $taxjarConfig
      * @param \Taxjar\SalesTax\Helper\Nexus $nexusHelper
+     * @param \Magento\Framework\App\CacheInterface $cache
+     * @param \Magento\Framework\Serialize\SerializerInterface $serializer
      */
     public function __construct(
         \Magento\Checkout\Model\Session $checkoutSession,
@@ -141,7 +156,9 @@ class Smartcalcs
         \Magento\Directory\Model\Country\Postcode\ConfigInterface $postCodesConfig,
         \Taxjar\SalesTax\Model\Logger $logger,
         TaxjarConfig $taxjarConfig,
-        \Taxjar\SalesTax\Helper\Nexus $nexusHelper
+        \Taxjar\SalesTax\Helper\Nexus $nexusHelper,
+        \Magento\Framework\App\CacheInterface $cache,
+        \Magento\Framework\Serialize\SerializerInterface $serializer
     ) {
         $this->checkoutSession = $checkoutSession;
         $this->regionFactory = $regionFactory;
@@ -156,6 +173,8 @@ class Smartcalcs
         $this->logger = $logger->setFilename(TaxjarConfig::TAXJAR_CALCULATIONS_LOG);
         $this->taxjarConfig = $taxjarConfig;
         $this->nexusHelper = $nexusHelper;
+        $this->cache = $cache;
+        $this->serializer = $serializer;
     }
 
     /**
@@ -182,7 +201,7 @@ class Smartcalcs
 
         $order = $this->_getOrder($quote, $quoteTaxDetails, $address);
 
-        if ($this->_orderChanged($order)) {
+        if ($this->_orderChanged((object) $order, $quote->getId())) {
             $client = $this->clientFactory->create();
             $client->setUri($this->taxjarConfig->getApiUrl() . '/magento/taxes');
             $client->setMethod(Request::METHOD_POST);
@@ -201,12 +220,15 @@ class Smartcalcs
 
             $this->logger->log('Calculating sales tax: ' . json_encode($order), 'post');
 
-            $this->_setSessionData('order', json_encode($order, JSON_NUMERIC_CHECK | JSON_PRESERVE_ZERO_FRACTION));
+            $this->setCacheData('order', (object) $order, $quote->getId());
 
             try {
                 $response = $client->send();
-                $this->response = $response;
-                $this->_setSessionData('response', $response);
+                $this->response = (object) [
+                    'body' => $response->getBody(),
+                    'code' => $response->getStatusCode()
+                ];
+                $this->setCacheData('response', $this->response, $quote->getId());
 
                 if (Response::STATUS_CODE_200 === $response->getStatusCode()) {
                     $this->logger->log('Successful API response: ' . $response->getBody(), 'success');
@@ -225,6 +247,8 @@ class Smartcalcs
                             $errorResponse->error . ' - ' . $errorResponse->detail,
                     ];
                 }
+
+                $this->setCacheData('order_metadata', (object) $metadata, $quote->getId());
             } catch (RuntimeException $e) {
                 // Catch API timeouts and network issues
                 $this->logger->log(
@@ -232,17 +256,23 @@ class Smartcalcs
                     'error'
                 );
                 $this->response = null;
-                $this->_unsetSessionData('response');
+                $this->unsetCacheData('response', $quote->getId());
                 $metadata = [
                     MetadataInterface::TAX_CALCULATION_STATUS => Metadata::TAX_CALCULATION_STATUS_ERROR,
                     MetadataInterface::TAX_CALCULATION_MESSAGE => $e->getMessage(),
                 ];
             }
         } else {
-            $sessionResponse = $this->_getSessionData('response');
+            $storedResponse = $this->getCacheData('response', $quote->getId());
 
-            if (isset($sessionResponse)) {
-                $this->response = $sessionResponse;
+            if (is_object($storedResponse)) {
+                $this->response = $storedResponse;
+            }
+
+            $storedMetadata = $this->getCacheData('order_metadata', $quote->getId());
+
+            if (is_object($storedMetadata)) {
+                $metadata = (array) $storedMetadata;
             }
         }
 
@@ -365,8 +395,8 @@ class Smartcalcs
     {
         if ($this->response) {
             return [
-                'body' => json_decode($this->response->getBody(), true),
-                'status' => $this->response->getStatusCode(),
+                'body' => json_decode($this->response->body, true),
+                'status' => $this->response->code,
             ];
         } else {
             return [
@@ -384,7 +414,7 @@ class Smartcalcs
     public function getResponseLineItem($id)
     {
         if ($this->response) {
-            $responseBody = json_decode($this->response->getBody(), true);
+            $responseBody = json_decode($this->response->body, true);
 
             if (isset($responseBody['tax']['breakdown']['line_items'])) {
                 $lineItems = $responseBody['tax']['breakdown']['line_items'];
@@ -405,7 +435,7 @@ class Smartcalcs
     public function getResponseShipping()
     {
         if ($this->response) {
-            $responseBody = json_decode($this->response->getBody(), true);
+            $responseBody = json_decode($this->response->body, true);
 
             if (isset($responseBody['tax']['breakdown']['shipping'])) {
                 return $responseBody['tax']['breakdown']['shipping'];
@@ -560,18 +590,16 @@ class Smartcalcs
     }
 
     /**
-     * Verify if the order changed compared to session
+     * Verify if the order changed compared to stored
      *
-     * @param  array $currentOrder
      * @return bool
      */
-    private function _orderChanged($currentOrder)
+    private function _orderChanged(object $currentOrder, string $quoteId)
     {
-        $sessionOrder = $this->_getSessionData('order');
-        $currentOrder = json_encode($currentOrder, JSON_NUMERIC_CHECK | JSON_PRESERVE_ZERO_FRACTION);
+        $storedOrder = $this->getCacheData('order', $quoteId);
 
-        if ($sessionOrder) {
-            return $currentOrder !== $sessionOrder;
+        if ($storedOrder) {
+            return $currentOrder != $storedOrder;
         }
 
         return true;
@@ -585,7 +613,7 @@ class Smartcalcs
      */
     private function _getSessionData($key)
     {
-        return $this->checkoutSession->getData('taxjar_salestax_' . $key);
+        return $this->checkoutSession->getData(self::TAXJAR_TAG . $key);
     }
 
     /**
@@ -597,7 +625,7 @@ class Smartcalcs
      */
     private function _setSessionData($key, $val)
     {
-        return $this->checkoutSession->setData('taxjar_salestax_' . $key, $val);
+        return $this->checkoutSession->setData(self::TAXJAR_TAG . $key, $val);
     }
 
     /**
@@ -608,7 +636,95 @@ class Smartcalcs
      */
     private function _unsetSessionData($key)
     {
-        return $this->checkoutSession->unsetData('taxjar_salestax_' . $key);
+        return $this->checkoutSession->unsetData(self::TAXJAR_TAG . $key);
+    }
+
+    /**
+     * Get data from cache
+     * 
+     * @param string $key
+     * @param string $quoteId
+     * @return object|null
+     */
+    private function getCacheData(string $key, string $quoteId)
+    {
+        $cacheKey = self::TAXJAR_TAG . $quoteId . '_' . $key;
+
+        $cacheData = $this->cache->load($cacheKey);
+
+        if (!$cacheData) {
+            return null;
+        }
+
+        try {
+            $unserializedData = $this->serializer->unserialize($cacheData);
+        } catch (\Throwable $e) {
+            $this->logger->log(
+                'Unable to unserialize cache data for key: ' . $cacheKey . 
+                '. Exception: ' . $e->getMessage() . 
+                '. Data value: ' . $cacheData, 
+                'error'
+            );
+
+            return null;
+        }
+
+        if (!is_array($unserializedData)) {
+            $this->logger->log(
+                'Unserialized data is not an array for key: ' . $cacheKey . 
+                '. Data type: ' . gettype($unserializedData) . 
+                '. Data value: ' . $cacheData . 
+                '. Unserialized value: ' . var_export($unserializedData, true), 
+                'error'
+            );
+
+            return null;
+        }
+
+        return (object) $unserializedData;
+    }
+
+    /**
+     * Set data to cache
+     * 
+     * @param string $key
+     * @param object $value
+     * @param string $quoteId
+     * @return bool
+     */
+    private function setCacheData(string $key, object $value, string $quoteId)
+    {
+        $cacheKey = self::TAXJAR_TAG . $quoteId . '_' . $key;
+
+        try {
+            $serializedValue = $this->serializer->serialize($value);
+        } catch (\Throwable $e) {
+            $this->logger->log(
+                'Unable to serialize value for key: ' . $cacheKey . 
+                '. Exception: ' . $e->getMessage() . 
+                '. Object type: ' . get_class($value) . 
+                '. Object data: ' . var_export($value, true), 
+                'error'
+            );
+
+            return false;
+        }
+
+        return $this->cache->save($serializedValue, $cacheKey, [self::TAXJAR_TAG], self::CACHE_LIFETIME);
+    }
+
+    /**
+     * Unset data from cache
+     * 
+     * @param string $key
+     * @param string $quoteId
+     * @return bool
+     */
+    private function unsetCacheData(string $key, string $quoteId)
+    {
+        $cacheKey = self::TAXJAR_TAG . $quoteId . '_' . $key;
+
+        return $this->cache->remove($cacheKey);
     }
 
     private function _getStoreValue($value, $storeId)
