@@ -95,7 +95,6 @@ class SyncTransaction implements ObserverInterface
             $order = $this->orderRepository->get($observer->getData('order_id'));
         } else {
             $order = $event->getData('order') ?? $event->getData('order_id');
-            $order = $this->orderRepository->get((int) $order->getId());
         }
 
         if (!$order->getState()) {
