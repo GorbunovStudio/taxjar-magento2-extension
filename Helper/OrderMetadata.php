@@ -73,13 +73,26 @@ class OrderMetadata extends AbstractHelper
      */
     public function setOrderExtensionAttributeData(OrderInterface $order): OrderInterface
     {
-        $extensionAttributes = $order->getExtensionAttributes() ?: $this->extensionFactory->create();
         $orderMetadata = $this->getOrderMetadata($order);
-        if ($orderMetadata) {
+
+        if (!$orderMetadata) {
+            return $order;
+        }
+
+        $extensionAttributes = $order->getExtensionAttributes() ?: $this->extensionFactory->create();
+
+        if ($extensionAttributes->getTjTaxCalculationStatus() === null) {
             $extensionAttributes->setTjTaxCalculationStatus($orderMetadata->getTaxCalculationStatus());
+        }
+
+        if ($extensionAttributes->getTjTaxCalculationMessage() === null) {
             $extensionAttributes->setTjTaxCalculationMessage($orderMetadata->getTaxCalculationMessage());
+        }
+
+        if ($extensionAttributes->getTjTaxPreventTaxSync() === null) {
             $extensionAttributes->setTjTaxPreventTaxSync($orderMetadata->getPreventTaxSync());
         }
+
         return $order->setExtensionAttributes($extensionAttributes);
     }
 }
