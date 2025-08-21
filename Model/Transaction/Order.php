@@ -45,6 +45,43 @@ class Order extends \Taxjar\SalesTax\Model\Transaction
     protected $apiKey;
 
     /**
+     * @param \Taxjar\SalesTax\Helper\OrderMetadata $orderMetadataHelper
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+     * @param \Taxjar\SalesTax\Model\ClientFactory $clientFactory
+     * @param \Magento\Catalog\Model\ProductRepository $productRepository
+     * @param \Magento\Directory\Model\RegionFactory $regionFactory
+     * @param \Magento\Tax\Api\TaxClassRepositoryInterface $taxClassRepository
+     * @param \Taxjar\SalesTax\Model\Logger $logger
+     * @param \Magento\Framework\ObjectManagerInterface $objectManager
+     * @param \Taxjar\SalesTax\Helper\Data $helper
+     * @param \Taxjar\SalesTax\Model\Configuration $taxjarConfig
+     */
+    public function __construct(
+        private \Taxjar\SalesTax\Helper\OrderMetadata $orderMetadataHelper,
+        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
+        \Taxjar\SalesTax\Model\ClientFactory $clientFactory,
+        \Magento\Catalog\Model\ProductRepository $productRepository,
+        \Magento\Directory\Model\RegionFactory $regionFactory,
+        \Magento\Tax\Api\TaxClassRepositoryInterface $taxClassRepository,
+        \Taxjar\SalesTax\Model\Logger $logger,
+        \Magento\Framework\ObjectManagerInterface $objectManager,
+        \Taxjar\SalesTax\Helper\Data $helper,
+        \Taxjar\SalesTax\Model\Configuration $taxjarConfig
+    ) {
+        parent::__construct(
+            $scopeConfig,
+            $clientFactory,
+            $productRepository,
+            $regionFactory,
+            $taxClassRepository,
+            $logger,
+            $objectManager,
+            $helper,
+            $taxjarConfig
+        );
+    }
+
+    /**
      * Set request value
      *
      * @param array $value
@@ -210,6 +247,11 @@ class Order extends \Taxjar\SalesTax\Model\Transaction
      */
     public function isSyncable(OrderInterface $order): bool
     {
+        if ($order->getExtensionAttributes() && 
+            $order->getExtensionAttributes()->getTjTaxPreventTaxSync() === null) {
+            $this->orderMetadataHelper->setOrderExtensionAttributeData($order);
+        }
+
         if ($order->getExtensionAttributes() && 
             $order->getExtensionAttributes()->getTjTaxPreventTaxSync()) {
             $this->logger->log('Order #' . $order->getIncrementId() . ' marked to prevent TaxJar sync.');
