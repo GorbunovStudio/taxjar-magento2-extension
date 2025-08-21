@@ -21,7 +21,6 @@ use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\Registry;
-use Magento\Sales\Api\OrderRepositoryInterface;
 use Taxjar\SalesTax\Model\Transaction\OrderFactory;
 use Taxjar\SalesTax\Model\Transaction\RefundFactory;
 use Taxjar\SalesTax\Helper\Data as TaxjarHelper;
@@ -32,11 +31,6 @@ class SyncRefund implements ObserverInterface
      * @var \Magento\Framework\Message\ManagerInterface
      */
     protected $messageManager;
-
-    /**
-     * @var \Magento\Sales\Api\OrderRepositoryInterface
-     */
-    protected $orderRepository;
 
     /**
      * @var \Taxjar\SalesTax\Model\Transaction\OrderFactory
@@ -60,21 +54,18 @@ class SyncRefund implements ObserverInterface
 
     /**
      * @param ManagerInterface $messageManager
-     * @param OrderRepositoryInterface $orderRepository
      * @param OrderFactory $orderFactory
      * @param RefundFactory $refundFactory
      * @param Registry $registry
      */
     public function __construct(
         ManagerInterface $messageManager,
-        OrderRepositoryInterface $orderRepository,
         OrderFactory $orderFactory,
         RefundFactory $refundFactory,
         TaxjarHelper $helper,
         Registry $registry
     ) {
         $this->messageManager = $messageManager;
-        $this->orderRepository = $orderRepository;
         $this->orderFactory = $orderFactory;
         $this->refundFactory = $refundFactory;
         $this->helper = $helper;
@@ -89,7 +80,7 @@ class SyncRefund implements ObserverInterface
         Observer $observer
     ) {
         $creditmemo = $observer->getEvent()->getCreditmemo();
-        $order = $this->orderRepository->get($creditmemo->getOrderId());
+        $order = $creditmemo->getOrder();
         $eventName = $observer->getEvent()->getName();
         $orderTransaction = $this->orderFactory->create();
 
