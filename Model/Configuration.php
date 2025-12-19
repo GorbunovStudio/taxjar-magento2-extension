@@ -48,6 +48,7 @@ class Configuration
     const TAXJAR_STATES                     = 'tax/taxjar/states';
     const TAXJAR_TRANSACTION_SYNC           = 'tax/taxjar/transactions';
     const TAXJAR_TRANSACTIONS_UPDATES_SYNC  = 'tax/taxjar/transactions_updates';
+    const TAXJAR_TRANSACTIONS_ADDRESS_UPDATES_SYNC = 'tax/taxjar/transactions_address_updates';
     const TAXJAR_TRANSACTIONS_SYNC_THRESHOLD  = 'tax/taxjar/transactions_threshold';
     const TAXJAR_DEFAULT_LOG                = 'default.log';
     const TAXJAR_CALCULATIONS_LOG           = 'calculations.log';

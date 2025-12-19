@@ -90,6 +90,7 @@ class SyncTransaction implements ObserverInterface
     public function execute(Observer $observer)
     {
         $event = $observer->getEvent();
+        $eventName = $event->getName();
 
         if ($observer->getData('order_id')) {
             $order = $this->orderRepository->get($observer->getData('order_id'));
@@ -101,8 +102,21 @@ class SyncTransaction implements ObserverInterface
             return;
         }
 
-        if ($order->getTjSalestaxSyncDate() && !$this->helper->isTransactionsUpdatesSyncEnabled($order->getStoreId())) {
-            return;
+        $isAddressUpdateEvent = in_array($eventName, [
+            'admin_sales_order_address_update',
+            'budsies_sales_order_address_update'
+        ]);
+
+        if ($order->getTjSalestaxSyncDate()) {
+            if ($isAddressUpdateEvent) {
+                if (!$this->helper->isTransactionsAddressUpdatesSyncEnabled($order->getStoreId())) {
+                    return;
+                }
+            } else {
+                if (!$this->helper->isTransactionsUpdatesSyncEnabled($order->getStoreId())) {
+                    return;
+                }
+            }
         }
 
         $transactionsSyncThreshold = $this->helper->getTransactionsSyncThreshold($order->getStoreId());
@@ -112,7 +126,6 @@ class SyncTransaction implements ObserverInterface
         }
 
         $forceSync = (bool)$observer->getData('force');
-        $eventName = $event->getName();
         /** @var Order $orderTransaction */
         $orderTransaction = $this->orderFactory->create();
 
