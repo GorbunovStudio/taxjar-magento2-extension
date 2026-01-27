@@ -42,6 +42,12 @@
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <depends><field id="connected">1</field></depends>
                 </field>
+                <field id="transactions_address_updates" translate="label" sortOrder="3" type="select" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Sync On Order Address Update</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Enable transaction sync when order shipping address is updated (from admin or API).</comment>
+                    <depends><field id="connected">1</field></depends>
+                </field>
                 <field id="address_validation" translate="label" sortOrder="4" type="select" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Address Validation</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>

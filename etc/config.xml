@@ -22,6 +22,7 @@
             <taxjar>
                 <product_tax_classes>2</product_tax_classes>
                 <customer_tax_classes>3</customer_tax_classes>
+                <transactions_address_updates>0</transactions_address_updates>
             </taxjar>
         </tax>
     </default>
