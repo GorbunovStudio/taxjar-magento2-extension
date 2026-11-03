@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Taxjar_SalesTax
  *
@@ -40,7 +41,7 @@ class Refund extends \Taxjar\SalesTax\Model\Transaction
     protected $request;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $apiKey;
 
@@ -142,7 +143,7 @@ class Refund extends \Taxjar\SalesTax\Model\Transaction
      * @param string|null $method Optionally specify HTTP method
      * @throws LocalizedException
      */
-    public function push(bool $forceFlag = false, string $method = null)
+    public function push(bool $forceFlag = false, ?string $method = null)
     {
         $refundUpdatedAt = $this->originalRefund->getUpdatedAt();
         $refundSyncedAt = $this->originalRefund->getData('tj_salestax_sync_date');

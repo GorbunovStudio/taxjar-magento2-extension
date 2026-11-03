@@ -17,8 +17,10 @@ use Taxjar\SalesTax\Model\ResourceModel\Tax\Nexus\Collection;
 use Taxjar\SalesTax\Model\Tax\Nexus;
 use Taxjar\SalesTax\Model\Tax\NexusFactory;
 use Taxjar\SalesTax\Model\Tax\NexusSync;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Taxjar\SalesTax\Test\Unit\UnitTestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class NexusSyncTest extends UnitTestCase
 {
     /**
@@ -70,18 +72,10 @@ class NexusSyncTest extends UnitTestCase
     {
         parent::setUp();
 
-        $this->contextMock = $this->getMockBuilder(\Magento\Framework\Model\Context::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $this->registryMock = $this->getMockBuilder(\Magento\Framework\Registry::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $this->extensionFactoryMock = $this->getMockBuilder(\Magento\Framework\Api\ExtensionAttributesFactory::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $this->customAttributeFactoryMock = $this->getMockBuilder(AttributeValueFactory::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        $this->contextMock = $this->createStub(\Magento\Framework\Model\Context::class);
+        $this->registryMock = $this->createStub(\Magento\Framework\Registry::class);
+        $this->extensionFactoryMock = $this->createStub(\Magento\Framework\Api\ExtensionAttributesFactory::class);
+        $this->customAttributeFactoryMock = $this->createStub(AttributeValueFactory::class);
         $this->clientFactoryMock = $this->getMockBuilder(ClientFactory::class)
             ->disableOriginalConstructor()
             ->getMock();
@@ -94,9 +88,7 @@ class NexusSyncTest extends UnitTestCase
         $this->countryFactoryMock = $this->getMockBuilder(CountryFactory::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $this->scopeConfigMock = $this->getMockBuilder(ScopeConfigInterface::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        $this->scopeConfigMock = $this->createStub(ScopeConfigInterface::class);
         $this->nexusResourceMock = $this->getMockBuilder(NexusResource::class)
             ->disableOriginalConstructor()
             ->getMock();
@@ -261,16 +253,38 @@ class NexusSyncTest extends UnitTestCase
         $regionMock = $this->getMockBuilder(Region::class)->disableOriginalConstructor()->getMock();
         $regionMock->expects(static::exactly(2))
             ->method('loadByCode')
-            ->withConsecutive(['TX', 'US'], ['', 'GB'])
-            ->willReturnSelf();
+            ->willReturnCallback(function ($code, $country) use ($regionMock) {
+                static $callCount = 0;
+                $callCount++;
+
+                $expectedCalls = [
+                    ['TX', 'US'],
+                    ['', 'GB']
+                ];
+
+                $this->assertSame($expectedCalls[$callCount - 1], [$code, $country]);
+
+                return $regionMock;
+            });
         $regionMock->expects(static::atLeast(2))->method('getId')->willReturn(99);
         $this->regionFactoryMock->expects(static::atLeast(2))->method('create')->willReturn($regionMock);
 
         $countryMock = $this->getMockBuilder(Country::class)->disableOriginalConstructor()->getMock();
         $countryMock->expects(static::exactly(2))
             ->method('loadByCode')
-            ->withConsecutive(['US'], ['GB'])
-            ->willReturnSelf();
+            ->willReturnCallback(function ($code) use ($countryMock) {
+                static $callCount = 0;
+                $callCount++;
+
+                $expectedCalls = [
+                    ['US'],
+                    ['GB']
+                ];
+
+                $this->assertSame($expectedCalls[$callCount - 1], [$code]);
+
+                return $countryMock;
+            });
         $countryMock->expects(static::atLeast(2))->method('getId')->willReturn(77);
         $this->countryFactoryMock->expects(static::atLeast(2))->method('create')->willReturn($countryMock);
         $this->nexusResourceMock->expects(static::any())->method('getIdFieldName')->willReturn('id');
