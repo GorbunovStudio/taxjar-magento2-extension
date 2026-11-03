@@ -144,7 +144,7 @@ class BackfillTransactionsTest extends UnitTestCase
 
     public function testClassConstantSyncableStatuses()
     {
-        $this->assertSame(['complete', 'closed'], $this->sut::SYNCABLE_STATUSES);
+        $this->assertSame(['complete', 'closed', 'processing', 'holded'], $this->sut::SYNCABLE_STATUSES);
     }
 
     public function testExecuteMethodThrowsExceptionWithoutApiKey()

@@ -32,9 +32,9 @@ use Taxjar\SalesTax\Model\Sales\Order\MetadataFactory;
 class QuoteManagement
 {
     /**
-     * @var Metadata
+     * @var MetadataFactory
      */
-    private $metadata;
+    private $metadataFactory;
 
     /**
      * @var MetadataRepositoryInterface
@@ -51,7 +51,7 @@ class QuoteManagement
         MetadataFactory $metadataFactory,
         MetadataRepositoryInterface $metadataRepository
     ) {
-        $this->metadata = $metadataFactory->create();
+        $this->metadataFactory = $metadataFactory;
         $this->metadataRepository = $metadataRepository;
     }
 
@@ -74,23 +74,30 @@ class QuoteManagement
         /** @var OrderExtensionInterface|null $orderExtensionAttributes */
         $orderExtensionAttributes = $order->getExtensionAttributes();
 
-        if ($orderExtensionAttributes) {
-            if ($orderExtensionAttributes->getTjTaxCalculationStatus()) {
-                $this->metadata->setOrderId($order->getEntityId());
-                $this->metadata->setTaxCalculationStatus($orderExtensionAttributes->getTjTaxCalculationStatus());
-            }
-            if ($orderExtensionAttributes->getTjTaxCalculationMessage()) {
-                $this->metadata->setOrderId($order->getEntityId());
-                $this->metadata->setTaxCalculationMessage($orderExtensionAttributes->getTjTaxCalculationMessage());
-            }
-            if ($orderExtensionAttributes->getTjTaxPreventTaxSync() !== null) {
-                $this->metadata->setOrderId($order->getEntityId());
-                $this->metadata->setPreventTaxSync($orderExtensionAttributes->getTjTaxPreventTaxSync());
-            }
+        if (!$orderExtensionAttributes) {
+            return $order;
         }
 
-        if ($this->metadata->getOrderId() !== null) {
-            $this->metadataRepository->save($this->metadata);
+        // Plugin is a shared instance; a fresh entity per order keeps a previously saved
+        // row from being updated when several orders are placed in one process.
+        /** @var Metadata $metadata */
+        $metadata = $this->metadataFactory->create();
+
+        if ($orderExtensionAttributes->getTjTaxCalculationStatus()) {
+            $metadata->setOrderId($order->getEntityId());
+            $metadata->setTaxCalculationStatus($orderExtensionAttributes->getTjTaxCalculationStatus());
+        }
+        if ($orderExtensionAttributes->getTjTaxCalculationMessage()) {
+            $metadata->setOrderId($order->getEntityId());
+            $metadata->setTaxCalculationMessage($orderExtensionAttributes->getTjTaxCalculationMessage());
+        }
+        if ($orderExtensionAttributes->getTjTaxPreventTaxSync() !== null) {
+            $metadata->setOrderId($order->getEntityId());
+            $metadata->setPreventTaxSync($orderExtensionAttributes->getTjTaxPreventTaxSync());
+        }
+
+        if ($metadata->getOrderId() !== null) {
+            $this->metadataRepository->save($metadata);
         }
 
         return $order;

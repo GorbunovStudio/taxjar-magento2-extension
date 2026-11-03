@@ -6,7 +6,6 @@ use Magento\Framework\App\State;
 use Magento\Framework\Event\Manager;
 use Magento\Framework\Event\ManagerInterface;
 use Magento\Framework\Event\Observer;
-use Magento\Framework\Console\Cli;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -86,9 +85,7 @@ class SyncTransactionsCommand extends Command
         } catch (\Exception $e) {
             $output->writeln(PHP_EOL . '<error>Failed to sync transactions: ' . $e->getMessage() . '</error>');
 
-            return Cli::RETURN_FAILURE;
+            return 1;
         }
-
-        return Cli::RETURN_SUCCESS;
     }
 }

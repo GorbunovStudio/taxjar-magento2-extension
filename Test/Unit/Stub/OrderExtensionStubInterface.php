@@ -20,4 +20,8 @@ interface OrderExtensionStubInterface extends OrderExtensionInterface
     public function getTjTaxCalculationMessage();
 
     public function setTjTaxCalculationMessage($message);
+
+    public function getTjTaxPreventTaxSync();
+
+    public function setTjTaxPreventTaxSync($preventTaxSync);
 }

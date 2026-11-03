@@ -87,7 +87,7 @@ class OrderTest extends IntegrationTestCase
         $this->assertEquals(20.0, $result['shipping'], 'Invalid shipping amount');
     }
 
-    public function testBuildTaxjarOrderTransactionNonUSIsNotSyncable()
+    public function testBuildTaxjarOrderTransactionNonUSIsSyncable()
     {
         $order = OrderBuilder::anOrder()
             ->withCustomer(
@@ -97,10 +97,11 @@ class OrderTest extends IntegrationTestCase
                     )
             )
             ->build();
+        $order->setState(\Magento\Sales\Model\Order::STATE_PROCESSING);
 
         $result = $this->taxjarOrder->isSyncable($order);
 
-        $this->assertFalse($result, 'Non-US order sync');
+        $this->assertTrue($result, 'Non-US order sync');
     }
 
     public function testBuildTaxjarOrderTransactionRelatesToCustomer()

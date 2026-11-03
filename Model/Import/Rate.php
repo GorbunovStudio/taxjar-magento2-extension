@@ -79,11 +79,6 @@ class Rate
     protected $rule;
 
     /**
-     * @var \Magento\Tax\Model\CalculationFactory
-     */
-    protected $_calculationFactory;
-
-    /**
      * @param CacheInterface $cache
      * @param ScopeConfigInterface $scopeConfig
      * @param \Magento\Tax\Model\Calculation\RateFactory $rateFactory
