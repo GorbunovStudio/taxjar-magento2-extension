@@ -21,9 +21,9 @@ class IntegrationTestCase extends BaseTestCase
      */
     protected $cleanupReservations;
 
-    public function __construct()
+    protected function setUp(): void
     {
-        parent::__construct();
+        parent::setUp();
 
         $this->objectManager = Bootstrap::getObjectManager();
     }

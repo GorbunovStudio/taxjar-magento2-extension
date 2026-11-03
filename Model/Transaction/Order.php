@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Taxjar_SalesTax
  *
@@ -40,7 +41,7 @@ class Order extends \Taxjar\SalesTax\Model\Transaction
     protected $request;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $apiKey;
 
@@ -140,7 +141,7 @@ class Order extends \Taxjar\SalesTax\Model\Transaction
      * @param string|null $method
      * @throws LocalizedException
      */
-    public function push(bool $forceFlag = false, string $method = null)
+    public function push(bool $forceFlag = false, ?string $method = null)
     {
         $orderUpdatedAt = $this->originalOrder->getUpdatedAt();
         $orderSyncedAt = $this->originalOrder->getData('tj_salestax_sync_date');
@@ -247,17 +248,21 @@ class Order extends \Taxjar\SalesTax\Model\Transaction
      */
     public function isSyncable(OrderInterface $order): bool
     {
-        if ($order->getExtensionAttributes() && 
-            $order->getExtensionAttributes()->getTjTaxPreventTaxSync() === null) {
+        if (
+            $order->getExtensionAttributes() &&
+            $order->getExtensionAttributes()->getTjTaxPreventTaxSync() === null
+        ) {
             $this->orderMetadataHelper->setOrderExtensionAttributeData($order);
         }
 
-        if ($order->getExtensionAttributes() && 
-            $order->getExtensionAttributes()->getTjTaxPreventTaxSync()) {
+        if (
+            $order->getExtensionAttributes() &&
+            $order->getExtensionAttributes()->getTjTaxPreventTaxSync()
+        ) {
             $this->logger->log('Order #' . $order->getIncrementId() . ' marked to prevent TaxJar sync.');
             return false;
         }
-        
+
         return $this->stateIsSyncable($order)
             && $this->currencyIsSyncable($order);
     }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Taxjar_SalesTax
  *
@@ -59,25 +60,16 @@ class SyncProductCategoriesCommand extends Command
         parent::__construct();
     }
 
-    /**
-     * Sets config for CLI command
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('taxjar:product_categories:sync')
             ->setDescription('Sync Product Tax Categories from TaxJar to Magento');
     }
 
-    /**
-     * @param InputInterface $input
-     * @param OutputInterface $output
-     *
-     * @return string
-     */
     protected function execute(
         InputInterface $input,
         OutputInterface $output
-    ) {
+    ): int {
         try {
             $this->state->setAreaCode('adminhtml');
             $this->logger->console($output);
@@ -85,6 +77,7 @@ class SyncProductCategoriesCommand extends Command
             $this->importCategories->execute(new \Magento\Framework\Event\Observer);
             $output->writeln(PHP_EOL . 'Successfully synced product tax categories.');
 
+            return 0;
         } catch (\Exception $e) {
             $output->writeln(
                 PHP_EOL . '<error>Failed to sync product tax categories: ' . $e->getMessage() . '</error>'

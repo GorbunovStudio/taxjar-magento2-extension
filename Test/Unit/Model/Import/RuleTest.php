@@ -6,8 +6,10 @@ namespace Taxjar\SalesTax\Test\Unit\Model\Import;
 
 use Magento\Tax\Model\Calculation;
 use Magento\Tax\Model\Calculation\Rule;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Taxjar\SalesTax\Test\Unit\UnitTestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class RuleTest extends UnitTestCase
 {
     public function testCreate()
@@ -33,12 +35,12 @@ class RuleTest extends UnitTestCase
 
         $mockRuleFactory = $this->getMockBuilder(\Taxjar\SalesTax\Model\Import\RuleModelFactory::class)
             ->disableOriginalConstructor()
-            ->setMethods(['create'])
+            ->onlyMethods(['create'])
             ->getMock();
 
         $mockRuleRepository = $this->getMockBuilder(\Magento\Tax\Api\TaxRuleRepositoryInterface::class)
             ->disableOriginalConstructor()
-            ->setMethods(['get', 'getList', 'save', 'delete', 'deleteById'])
+            ->onlyMethods(['get', 'getList', 'save', 'delete', 'deleteById'])
             ->getMock();
 
         $mockRuleFactory->expects($this->once())->method('create')->willReturn($mockRule);
@@ -46,7 +48,7 @@ class RuleTest extends UnitTestCase
 
         $sut = $this->getMockBuilder(\Taxjar\SalesTax\Model\Import\Rule::class)
             ->setConstructorArgs([$mockRuleFactory, $mockRuleRepository])
-            ->setMethods(['saveCalculationData'])
+            ->onlyMethods(['saveCalculationData'])
             ->getMock();
 
         $sut->expects($this->any())->method('saveCalculationData')->willReturn(true);
@@ -58,53 +60,64 @@ class RuleTest extends UnitTestCase
 
     public function testSaveCalculationData()
     {
+        $mockCollection = $this->getMockBuilder(\Magento\Framework\Data\Collection\AbstractDb::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['addFieldToFilter', 'getFirstItem', 'getResource'])
+            ->getMock();
+
         $mockCalculation = $this->getMockBuilder(Calculation::class)
             ->disableOriginalConstructor()
-            ->setMethods([
+            ->onlyMethods([
                 'setData',
                 'save',
                 'getCollection',
                 'getId',
-                'delete',
-                'addFieldToFilter',
-                'getFirstItem'
+                'delete'
             ])
             ->getMock();
 
-        $mockCalculation->expects($this->any())->method('getCollection')->willReturnSelf();
-        $mockCalculation->expects($this->any())->method('addFieldToFilter')->willReturnSelf();
-        $mockCalculation->expects($this->any())->method('getFirstItem')->willReturnSelf();
+        $mockCollection->expects($this->any())->method('addFieldToFilter')->willReturnSelf();
+        $mockCollection->expects($this->any())->method('getFirstItem')->willReturn($mockCalculation);
+        $mockCalculation->expects($this->any())->method('getCollection')->willReturn($mockCollection);
         $mockCalculation->expects($this->any())->method('getId')->willReturn(99);
         $mockCalculation->expects($this->any())->method('delete')->willReturn(true);
 
+        $setDataCallCount = 0;
         $mockCalculation->expects($this->exactly(4))
             ->method('setData')
-            ->withConsecutive(
-                [[
-                    'tax_calculation_rule_id' => 999,
-                    'tax_calculation_rate_id' => 1,
-                    'customer_tax_class_id' => 1,
-                    'product_tax_class_id' => 3,
-                ]],
-                [[
-                    'tax_calculation_rule_id' => 999,
-                    'tax_calculation_rate_id' => 1,
-                    'customer_tax_class_id' => 1,
-                    'product_tax_class_id' => 4,
-                ]],
-                [[
-                    'tax_calculation_rule_id' => 999,
-                    'tax_calculation_rate_id' => 1,
-                    'customer_tax_class_id' => 2,
-                    'product_tax_class_id' => 3,
-                ]],
-                [[
-                    'tax_calculation_rule_id' => 999,
-                    'tax_calculation_rate_id' => 1,
-                    'customer_tax_class_id' => 2,
-                    'product_tax_class_id' => 4,
-                ]]
-            )->willReturnSelf();
+            ->willReturnCallback(function ($data) use (&$setDataCallCount, $mockCalculation) {
+                $setDataCallCount++;
+
+                $expectedData = [
+                    [
+                        'tax_calculation_rule_id' => 999,
+                        'tax_calculation_rate_id' => 1,
+                        'customer_tax_class_id' => 1,
+                        'product_tax_class_id' => 3,
+                    ],
+                    [
+                        'tax_calculation_rule_id' => 999,
+                        'tax_calculation_rate_id' => 1,
+                        'customer_tax_class_id' => 1,
+                        'product_tax_class_id' => 4,
+                    ],
+                    [
+                        'tax_calculation_rule_id' => 999,
+                        'tax_calculation_rate_id' => 1,
+                        'customer_tax_class_id' => 2,
+                        'product_tax_class_id' => 3,
+                    ],
+                    [
+                        'tax_calculation_rule_id' => 999,
+                        'tax_calculation_rate_id' => 1,
+                        'customer_tax_class_id' => 2,
+                        'product_tax_class_id' => 4,
+                    ],
+                ];
+
+                $this->assertSame($expectedData[$setDataCallCount - 1], $data);
+                return $mockCalculation;
+            });
 
         $mockCalculation->expects($this->exactly(4))
             ->method('save')
@@ -113,13 +126,21 @@ class RuleTest extends UnitTestCase
         $mockRule = $this->createMock(Rule::class);
         $mockRule->expects($this->exactly(2))
             ->method('getData')
-            ->withConsecutive(
-                ['customer_tax_class_ids'],
-                ['product_tax_class_ids']
-            )->willReturnOnConsecutiveCalls(
-                [1, 2],
-                [3, 4]
-            );
+            ->willReturnCallback(function ($key) {
+                static $callCount = 0;
+                $callCount++;
+
+                switch ($callCount) {
+                    case 1:
+                        $this->assertEquals('customer_tax_class_ids', $key);
+                        return [1, 2];
+                    case 2:
+                        $this->assertEquals('product_tax_class_ids', $key);
+                        return [3, 4];
+                    default:
+                        throw new \Exception('Unexpected call count: ' . $callCount);
+                }
+            });
 
         $mockRule->expects($this->exactly(4))
             ->method('getId')
@@ -129,15 +150,9 @@ class RuleTest extends UnitTestCase
             ->method('getCalculationModel')
             ->willReturn($mockCalculation);
 
-        $mockRuleFactory = $this->getMockBuilder(\Taxjar\SalesTax\Model\Import\RuleModelFactory::class)
-            ->disableOriginalConstructor()
-            ->setMethods(['create'])
-            ->getMock();
+        $mockRuleFactory = $this->createStub(\Taxjar\SalesTax\Model\Import\RuleModelFactory::class);
 
-        $mockRuleRepository = $this->getMockBuilder(\Magento\Tax\Api\TaxRuleRepositoryInterface::class)
-            ->disableOriginalConstructor()
-            ->setMethods(['get', 'getList', 'save', 'delete', 'deleteById'])
-            ->getMock();
+        $mockRuleRepository = $this->createStub(\Magento\Tax\Api\TaxRuleRepositoryInterface::class);
 
         $sut = new \Taxjar\SalesTax\Model\Import\Rule(
             $mockRuleFactory,
