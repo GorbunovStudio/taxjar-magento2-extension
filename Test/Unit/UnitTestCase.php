@@ -11,14 +11,13 @@ use Taxjar\SalesTax\Test\BaseTestCase;
 class UnitTestCase extends BaseTestCase
 {
     /**
-     * @param int|string $dataName
-     *
-     * @internal This method is not covered by the backward compatibility promise for PHPUnit
+     * @var ObjectManager
      */
-    public function __construct(?string $name = null, array $data = [], $dataName = '')
-    {
-        parent::__construct($name, $data, $dataName);
+    protected $objectManager;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
         $this->objectManager = new ObjectManager($this);
     }
 }

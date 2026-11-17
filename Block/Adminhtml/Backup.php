@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Taxjar_SalesTax
  *
@@ -84,9 +85,14 @@ class Backup extends Field
     protected $taxjarConfig;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $apiKey;
+
+    /**
+     * @var string|null
+     */
+    protected $_regionCode;
 
     /**
      * @param CacheInterface $cache

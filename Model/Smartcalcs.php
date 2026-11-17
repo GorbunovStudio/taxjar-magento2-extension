@@ -527,7 +527,9 @@ class Smartcalcs
                     $taxCode = '';
 
                     if ($extensionAttributes->getProductType() == \Magento\Catalog\Model\Product\Type::TYPE_BUNDLE) {
-                        $parentQuantities[$id] = $quantity;
+                        if ($id !== null) {
+                            $parentQuantities[$id] = $quantity;
+                        }
 
                         if ($extensionAttributes->getPriceType() ==
                             \Magento\Bundle\Model\Product\Price::PRICE_TYPE_DYNAMIC) {
@@ -535,7 +537,7 @@ class Smartcalcs
                         }
                     }
 
-                    if (isset($parentQuantities[$parentId])) {
+                    if ($parentId !== null && isset($parentQuantities[$parentId])) {
                         $quantity *= $parentQuantities[$parentId];
                     }
 

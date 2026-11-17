@@ -44,6 +44,11 @@ class Rate
     protected $scopeConfig;
 
     /**
+     * @var \Magento\Tax\Model\CalculationFactory
+     */
+    protected $_calculationFactory;
+
+    /**
      * @var \Magento\Tax\Model\Calculation\RateFactory
      */
     protected $rateFactory;
@@ -72,11 +77,6 @@ class Rate
      * @var \Magento\Tax\Model\Calculation\Rule
      */
     protected $rule;
-
-    /**
-     * @var \Magento\Tax\Model\CalculationFactory
-     */
-    protected $_calculationFactory;
 
     /**
      * @param CacheInterface $cache
@@ -183,9 +183,13 @@ class Rate
      */
     public function getExistingRates(): array
     {
-        return array_unique(
-            $this->getRule()->load(TaxjarConfig::TAXJAR_BACKUP_RATE_CODE, 'code')->getRates()
-        );
+        $rule = $this->getRule()->load(TaxjarConfig::TAXJAR_BACKUP_RATE_CODE, 'code');
+
+        if (!$rule->getId()) {
+            return [];
+        }
+
+        return array_unique($rule->getRates());
     }
 
     /**

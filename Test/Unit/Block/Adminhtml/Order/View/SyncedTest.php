@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Taxjar\SalesTax\Test\Unit\Block\Adminhtml\Order\View;
 
-use Magento\Sales\Api\Data\OrderInterface;
-use Magento\TestFramework\ObjectManager;
+use Magento\Sales\Model\Order;
 use Taxjar\SalesTax\Block\Adminhtml\Order\View\Synced;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Taxjar\SalesTax\Test\Unit\UnitTestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class SyncedTest extends UnitTestCase
 {
     public function testClassExists()
@@ -18,12 +19,18 @@ class SyncedTest extends UnitTestCase
 
     public function testGetSyncedAtDate()
     {
-        $orderMock = $this->getMockBuilder(OrderInterface::class)
+        $orderMock = $this->getMockBuilder(Order::class)
             ->disableOriginalConstructor()
-            ->setMethods(['getTjSalestaxSyncDate'])
-            ->getMockForAbstractClass();
-        $orderMock->expects(static::once())->method('getTjSalestaxSyncDate');
-        $sut = $this->objectManager->getObject(Synced::class);
-        $sut->getSyncedAtDate($orderMock);
+            ->onlyMethods([])
+            ->getMock();
+        $orderMock->setData('tj_salestax_sync_date', '2021-01-01 12:00:00');
+
+        $sut = $this->getMockBuilder(Synced::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods([])
+            ->getMock();
+
+        $result = $sut->getSyncedAtDate($orderMock);
+        $this->assertSame('2021-01-01 12:00:00', $result);
     }
 }

@@ -15,8 +15,10 @@ use Magento\Tax\Model\Calculation;
 use Magento\Tax\Model\Calculation\Rule\Validator;
 use Magento\Tax\Model\ClassModel;
 use Taxjar\SalesTax\Model\Import\RuleModel;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Taxjar\SalesTax\Test\Unit\UnitTestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class RuleModelTest extends UnitTestCase
 {
     public function testAfterSaveDispatchesEvents()
@@ -24,12 +26,19 @@ class RuleModelTest extends UnitTestCase
         $mockEventManager = $this->createMock(ManagerInterface::class);
         $mockEventManager->expects($this->exactly(4))
             ->method('dispatch')
-            ->withConsecutive(
-                ['model_save_after'],
-                ['clean_cache_by_tags'],
-                ['tax_rule_save_after'],
-                ['tax_settings_change_after']
-            );
+            ->willReturnCallback(function ($eventName) {
+                static $callCount = 0;
+                $callCount++;
+
+                $expectedEvents = [
+                    'model_save_after',
+                    'clean_cache_by_tags',
+                    'tax_rule_save_after',
+                    'tax_settings_change_after'
+                ];
+
+                $this->assertEquals($expectedEvents[$callCount - 1], $eventName);
+            });
 
         $mockContext = $this->createMock(Context::class);
         $mockContext->expects($this->once())->method('getEventDispatcher')->willReturn($mockEventManager);
@@ -38,19 +47,19 @@ class RuleModelTest extends UnitTestCase
             ->enableOriginalConstructor()
             ->setConstructorArgs([
                 $mockContext,
-                $this->createMock(Registry::class),
-                $this->createMock(ExtensionAttributesFactory::class),
-                $this->createMock(AttributeValueFactory::class),
-                $this->createMock(ClassModel::class),
-                $this->createMock(Calculation::class),
-                $this->createMock(Validator::class),
-                $this->createMock(AbstractResource::class),
-                $this->createMock(AbstractDb::class)
+                $this->createStub(Registry::class),
+                $this->createStub(ExtensionAttributesFactory::class),
+                $this->createStub(AttributeValueFactory::class),
+                $this->createStub(ClassModel::class),
+                $this->createStub(Calculation::class),
+                $this->createStub(Validator::class),
+                $this->createStub(AbstractResource::class),
+                $this->createStub(AbstractDb::class)
             ])
-            ->setMethods(['_init'])
+            ->onlyMethods(['_init'])
             ->getMock();
 
-        $sut->method('_init')->will($this->returnValue(true));
+        $sut->method('_init')->willReturn(true);
 
         $sut->afterSave();
     }
